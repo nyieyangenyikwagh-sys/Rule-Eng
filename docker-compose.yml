@@ -1,0 +1,73 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-alberta_rules}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-alberta_rules}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-alberta_rules} -d ${POSTGRES_DB:-alberta_rules}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    build: .
+    command: ["npm", "run", "db:migrate"]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-alberta_rules}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-alberta_rules}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  bootstrap:
+    build: .
+    command: ["npm", "run", "bootstrap:admin"]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-alberta_rules}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-alberta_rules}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:?Set BOOTSTRAP_ADMIN_EMAIL in .env}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?Set BOOTSTRAP_ADMIN_PASSWORD in .env}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-alberta_rules}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-alberta_rules}
+      ENVIRONMENT: production
+      HOST: 0.0.0.0
+      PORT: 8000
+      SESSION_TTL_MINUTES: ${SESSION_TTL_MINUTES:-480}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-120}
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8000/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

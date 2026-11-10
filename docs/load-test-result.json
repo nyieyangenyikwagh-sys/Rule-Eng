@@ -1,0 +1,16 @@
+{
+  "target_rps": 25,
+  "duration_seconds": 600,
+  "requests": 15000,
+  "errors": 0,
+  "p50_ms": 16.1351,
+  "p95_ms": 39.9646,
+  "p99_ms": 1049.0492,
+  "tested_at": "2026-10-16T10:56:57.079Z",
+  "environment": "Local Windows HTTP API with embedded PostgreSQL 18; not a 1-vCPU hosted PostgreSQL 16 deployment",
+  "target_result": {
+    "p95_under_300_ms": true,
+    "p99_under_800_ms": false,
+    "zero_errors": true
+  }
+}

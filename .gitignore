@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dist-scripts/
+coverage/
+.env
+.env.*
+!.env.example
+.tools/
+*.log
+test-results/

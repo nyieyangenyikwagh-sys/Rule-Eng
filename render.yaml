@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: alberta-rules-engine
+    runtime: docker
+    plan: starter
+    healthCheckPath: /ready
+    preDeployCommand: npm run db:migrate && npm run bootstrap:admin
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: SESSION_TTL_MINUTES
+        value: "480"
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        sync: false
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
